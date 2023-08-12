@@ -32,6 +32,9 @@ class Matcher:
         job['job_title'][i] = ast.literal_eval(job['job_title'])
         return job
 
+    @staticmethod
+    def unique_skills(jobs, job_index):
+        pass
 
     # df --> dictionary and the values as lists.
     def degree_matching(self, resumes, jobs, job_index):
@@ -41,14 +44,30 @@ class Matcher:
         for i, resume in resumes.iterrows():
             resume_degree = self.degree_importance(max([resume['degrees'][i] for i in range(len(resume['degrees'][i]))]))
             if resume_degree >= job_degree:
-                resumes.loc[i, 'Degree measure' + str(job_index)] = 1
+                resumes.loc[i, 'Degree measure ' + str(job_index)] = 1
         return resumes
-        
+
     def job_title_matching(self, resumes, jobs, job_index):
-        pass
+        job_job_title = jobs['job_title'][job_index]
+        resumes['Job title measure ' + str(job_index)] = 0
+        for i, resume in resumes.iterrows():
+            resume_job_title = resume['job_title']
+            resumes.loc[i, 'Job title measure ' + str(job_index)] = semantic_similarity(resume_job_title, job_job_title)
+        return resumes
 
     def experiences_matching(self, resumes, jobs, job_index):
-        pass
+        job_required_experiences = jobs['experiences'][job_index]
+        resumes['Experiences measure ' + str(job_index)] = 0
+        for i, resume in resumes.iterrows():
+            resume_experiences = resume['experiences']
+            score = 0
+            for job_exp in job_required_experiences:
+                temp = 0
+                for resume_exp in resumes_experiences:
+                    temp = max(temp, semantic_similarity(job_exp, resume_exp))
+                score += temp
+            resumes.loc[i, 'Experiences measure ' + str(job_index)] = score / len(job_exp)
+        return resumes
 
     def skills_matching(self, resume, jobs, job_index):
         pass
