@@ -31,8 +31,20 @@ class Matcher:
         job['job_title'][i] = ast.literal_eval(job['job_title'])
         return job
 
-    def semantic_similarity(self, jobs, job_index):
-        pass
+    def semantic_similarity(self, job_feature, resume_feature):
+        model = SentenceTransformer("model_name") # still have to choose the best model for the task
+
+        score = 0
+        sent = job_feature + resume_feature
+        sent_embedding = model.encode(sent)
+        for i, word in enumerate(job):
+            if word in resume:
+                score += 1
+            else:
+                if max(cosine_similarity([sen_embeddings[i]], sen_embeddings[len(job):])[0]) >= 0.5:
+                    score += max(cosine_similarity([sen_embeddings[i]], sen_embeddings[len(job):])[0])
+        score = score / len(job)
+        return score
 
     # df --> dictionary and the values as lists.
     def degree_matching(self, resumes, jobs, job_index):
