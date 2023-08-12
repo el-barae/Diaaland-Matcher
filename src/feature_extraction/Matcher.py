@@ -6,10 +6,9 @@ from resources import DEGREE_IMPORTANCE
 
 class Matcher:
     
-    def __init__(self, labels, resume, job):
-        self.labels = labels
+    def __init__(self, labels, resume, jobs):
         self.resume = resume
-        self.job = job
+        self.jobs = jobs
         self.degree_importance = DEGREE_IMPORTANCE
 
     def modifying_type_resume(self, resume):
@@ -34,6 +33,9 @@ class Matcher:
 
     @staticmethod
     def unique_skills(jobs, job_index):
+        pass
+    
+    def semantic_similarity(self, jobs, job_index):
         pass
 
     # df --> dictionary and the values as lists.
@@ -69,8 +71,20 @@ class Matcher:
             resumes.loc[i, 'Experiences measure ' + str(job_index)] = score / len(job_exp)
         return resumes
 
-    def skills_matching(self, resume, jobs, job_index):
-        pass
+    def skills_matching(self, resumes, jobs, job_index):
+        job_skills = jobs['skills'][job_index]
+        job_skills = list(set(job_skills)) # remove repeated skills
+        resumes['skills measure '+ str(job_index)] = 0
+        for i, resume in resumes.iterrows():
+            resume_skills = resume['skills']
+            score = 0
+            for skill in job_skills:
+                if skill in resume_skills:
+                    score += 1
+                else:
+                    score += max([semantic_similarity(skill, resume_skills[i]) for i in range(len(resume_skills))])
+        resumes['skills measure '+ str(job_index)] = score / len(job_skills)
+        return resumes
 
     def matching_score(self, resumes, jobs, job_index):
         # matching degrees:
