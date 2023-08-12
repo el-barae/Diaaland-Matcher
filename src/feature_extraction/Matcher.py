@@ -42,11 +42,6 @@ class Matcher:
 
     def skills_matching(self, resume, jobs, job_index):
         pass
-#    job_index : int = Field()
-    # degrees_matching : float = Field()
-    # job_title_matching : float = Field()
-    # skills_matching :float = Field()
-    # experiences_matching
 
     def matching_score(self, resumes, jobs, job_index):
         # matching degrees:
