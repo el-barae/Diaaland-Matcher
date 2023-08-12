@@ -34,10 +34,20 @@ class Matcher:
 
 
     # df --> dictionary and the values as lists.
-    def degree_matching(self, resumes, job, job_index):
+    def degree_matching(self, resumes, jobs, job_index):
+        # Find the minimum required degree in the job:
+        job_degree = self.degree_importance[min([jobs["degrees"][job_index][i] for i in range(len(jobs["degree"][job_index]))])]
+        resumes['Degree measure' + str(job_index)] = 0
+        for i, resume in resumes.iterrows():
+            resume_degree = self.degree_importance(max([resume['degrees'][i] for i in range(len(resume['degrees'][i]))]))
+            if resume_degree >= job_degree:
+                resumes.loc[i, 'Degree measure' + str(job_index)] = 1
+        return resumes
+        
+    def job_title_matching(self, resumes, jobs, job_index):
         pass
 
-    def major_matching(self, resumes, jobs, job_index):
+    def experiences_matching(self, resumes, jobs, job_index):
         pass
 
     def skills_matching(self, resume, jobs, job_index):
@@ -60,6 +70,7 @@ class Matcher:
             experiences_score = resumes['Experiences job ' + str(job_index) + ' matching'][i]
             final_score = (0.2 * degree_score + 0.3 * skills_score + 0.3 * experiences_score + 0.2 * jobtitle_score)
             resumes.loc[i, "matching score job " + str(job_index)] = round(final_score, 3)
+
         return resumes
 
 
