@@ -31,10 +31,6 @@ class Matcher:
         job['job_title'][i] = ast.literal_eval(job['job_title'])
         return job
 
-    @staticmethod
-    def unique_skills(jobs, job_index):
-        pass
-    
     def semantic_similarity(self, jobs, job_index):
         pass
 
