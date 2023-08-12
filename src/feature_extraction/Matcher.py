@@ -1,6 +1,7 @@
 import ast 
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from resources import DEGREE_IMPORTANCE
 
 
 class Matcher:
@@ -9,6 +10,7 @@ class Matcher:
         self.labels = labels
         self.resume = resume
         self.job = job
+        self.degree_importance = DEGREE_IMPORTANCE
 
     def modifying_type_resume(self, resume):
         for i in range(len(resume["degrees"])):
@@ -30,24 +32,40 @@ class Matcher:
         job['job_title'][i] = ast.literal_eval(job['job_title'])
         return job
 
-    @staticmethod
-    def assign_degree_match(match_scores):
-        match_score = 0
-        if len(match_scores) != 0:
-            if max(match_scores) >= 2:
-                match_score = 0.5
-            elif (max(match_scores) >= 0) and (max(match_scores) < 2):
-                match_score = 1
-        return match_score
 
-    
+    # df --> dictionary and the values as lists.
     def degree_matching(self, resumes, job, job_index):
-        job_degree = job['Degree'][job_index]
-        resumes['degree job' + str(job_index) + 'matching'] = 0
-        for i, row in resumes.iterrows():
-            match_scores = []
-            for j in resumes['DEGREE'][i]:
-                score = self.labels['DEGREE'][j] - self.labels['DEGREE'][job_degree]
-                match_scores.append(score)
+        pass
 
-    
+    def major_matching(self, resumes, jobs, job_index):
+        pass
+
+    def skills_matching(self, resume, jobs, job_index):
+        pass
+#    job_index : int = Field()
+    # degrees_matching : float = Field()
+    # job_title_matching : float = Field()
+    # skills_matching :float = Field()
+    # experiences_matching
+
+    def matching_score(self, resumes, jobs, job_index):
+        # matching degrees:
+        resumes = self.degree_matching(resumes, jobs, job_index)
+        # matching job_title:
+        resumes = self.job_title_matching(resumes, jobs, job_index)
+        # matching skills:
+        resumes = self.skills_matching(resumes, jobs, job_index)
+        # matching experiences
+        resumes = self.experiences_matching(resumes, jobs, job_index)
+
+        for i, row in self.resumes.iterrows():
+            skills_score = resumes['Skills job ' + str(job_index) + ' matching'][i]
+            degree_score = resumes['Degree job ' + str(job_index) + ' matching'][i]
+            jobtitle_score = resumes['Job title job ' + str(job_index) + ' matching'][i]
+            experiences_score = resumes['Experiences job ' + str(job_index) + ' matching'][i]
+            final_score = (0.2 * degree_score + 0.3 * skills_score + 0.3 * experiences_score + 0.2 * jobtitle_score)
+            resumes.loc[i, "matching score job " + str(job_index)] = round(final_score, 3)
+        return resumes
+
+
+
