@@ -66,6 +66,7 @@ class Matcher:
         return resumes
 
     def experiences_matching(self, resumes, jobs, job_index):
+        # Still didn't figure out how to take into consideration both years of exp and domaine of exp
         job_required_experiences = jobs['experiences'][job_index]
         resumes['Experiences measure ' + str(job_index)] = 0
         for i, resume in resumes.iterrows():
