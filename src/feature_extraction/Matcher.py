@@ -6,7 +6,7 @@ from resources import DEGREE_IMPORTANCE
 
 class Matcher:
     
-    def __init__(self, labels, resume, jobs):
+    def __init__(self, resume, jobs):
         self.resume = resume
         self.jobs = jobs
         self.degree_importance = DEGREE_IMPORTANCE
