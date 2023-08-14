@@ -17,6 +17,7 @@ class ResumeDBModel(Base):
     job_title = Column(String)
     skills = Column(ARRAY(String))
     experiences = Column(ARRAY(String))
+    location = Column(String)
 
 
 class ResumeModel(BaseModel):
@@ -25,6 +26,7 @@ class ResumeModel(BaseModel):
     job_title : str = Field()
     skills : list = Field()
     experiences : list = Field()
+    location : str = Field()
 
     class Config:
         allow_population_by_field_name = True
