@@ -12,9 +12,9 @@ data = format_data('../../../Annotated0.json')
 data_maker = NERDataMaker(data)
 
 from transformers import AutoTokenizer, DataCollatorForTokenClassification, AutoModelForTokenClassification, TrainingArguments, Trainer
-tokenizer = AutoTokenizer.from_pretrained("")
+tokenizer = AutoTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
 data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
-model = AutoModelForTokenClassification.from_pretrained("", num_labels=len(data_maker.unique_entities), id2label=data_maker.id2label, label2id=data_maker.label2id, ignore_mismatched_sizes=True)
+model = AutoModelForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner", num_labels=len(data_maker.unique_entities), id2label=data_maker.id2label, label2id=data_maker.label2id, ignore_mismatched_sizes=True)
 
 training_args = TrainingArguments(
     output_dir="./results",
