@@ -1,6 +1,4 @@
-import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-from spacy.lang.en import English
 import pandas as pd
 from resource import DEGREES_IMPORTANCE
 
