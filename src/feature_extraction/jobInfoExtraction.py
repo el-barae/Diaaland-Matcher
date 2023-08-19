@@ -96,7 +96,7 @@ class JobInfoExtraction:
         if len(degrees) != 0:
             self.jobs.at[row_num, 'Degree'] = self.get_minimum_degree(degrees)
         else:
-                self.jobs.at[row_num, 'Degree'] = ""
+            self.jobs.at[row_num, 'Degree'] = ""
         self.jobs.at[row_num, 'Job title'] = self.match_job_title_by_custom_ner(job)
         self.jobs.at[row_num, 'Skills'] = self.match_skills_by_custom_ner(job)
         return self.jobs
