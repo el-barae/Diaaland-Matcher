@@ -35,7 +35,7 @@ class JobInfoExtraction:
         for entity_text, entity_type in named_entities:
             if entity_type == "EXPERIENCE":
                 normalized_experience = entity_text.replace("-", " ")
-                if normalized_experience not in acceptable_majors:
+                if normalized_experience not in acceptable_experiences:
                     acceptable_experiences.append(normalized_experience)
         return acceptable_experiences
 
@@ -61,9 +61,9 @@ class JobInfoExtraction:
         for entity_text, entity_type in named_entities:
             if entity_type == "JOB_TITLE":
                 normalized_job_title = entity_text.replace("-", " ")
-                if normalized_job_title not in acceptable_majors:
+                if normalized_job_title not in job_title:
                     job_title.append(normalized_job_title)
-        return acceptable_majors
+        return job_title
 
     def match_degrees_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
