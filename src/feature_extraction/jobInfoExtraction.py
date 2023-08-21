@@ -1,15 +1,19 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 import pandas as pd
 from resource import DEGREES_IMPORTANCE
+from spacy.lang.fr import French
+from spacy.lang.en import English
+from langdetect import detect
 
 
 class JobInfoExtraction:
 
-    def __init__(self, custom_model_path, custom_tokenizer_path, job):
+    def __init__(self, custom_model_path, custom_tokenizer_path, jobs, skills_patterns):
         self.jobs = jobs[['description']]
         self.custom_model = BertForTokenClassification.from_pretrained(custom_model_path)
         self.custom_tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
         self.degrees_importance = DEGREES_IMPORTANCE
+        self.skills_patterns_path = skills_patterns_path
 
     @staticmethod
     def predict_named_entities(self, text):
@@ -52,6 +56,28 @@ class JobInfoExtraction:
     #                 job_skills.append(normalized_skill)
     #     return job_skills
 
+    @staticmethod
+    def match_skills_by_spacy(self, job):
+        language = detect(job)
+
+        if language.lower() == 'fr':
+            nlp = French()
+        else:
+            nlp = English()
+
+        patterns_path = self.skills_patterns_path
+        ruler = nlp.add_pipe('entity_ruler')
+        ruler.from_disk(patterns_path)
+
+        doc = nlp(job)
+        job_skills = []
+        for ent in doc.ents:
+            labels = ent.label_.split('|')
+            if labels_parts[0] == 'SKILL':
+                print((ent.text, ent.label_))
+                if labels_parts[1].replace('-', ' ') not in job_skills:
+                    job_skills.append(labels_parts[1].replace('-', ' '))
+            return job_skills
 
     @staticmethod
     def match_jobtitle_by_custom_ner(self, job):
