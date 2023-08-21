@@ -73,10 +73,10 @@ class JobInfoExtraction:
         job_skills = []
         for ent in doc.ents:
             labels = ent.label_.split('|')
-            if labels_parts[0] == 'SKILL':
+            if labels[0] == 'SKILL':
                 print((ent.text, ent.label_))
-                if labels_parts[1].replace('-', ' ') not in job_skills:
-                    job_skills.append(labels_parts[1].replace('-', ' '))
+                if labels[1].replace('-', ' ') not in job_skills:
+                    job_skills.append(labels[1].replace('-', ' '))
             return job_skills
 
     @staticmethod

@@ -18,6 +18,8 @@ def dataframe_to_json(dataframe):
 
     return json_data
 
+app = FastAPI()
+
 
 
 if __name__ == "__main__":
