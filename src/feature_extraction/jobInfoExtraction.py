@@ -11,6 +11,7 @@ class JobInfoExtraction:
         self.custom_tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
         self.degrees_importance = DEGREES_IMPORTANCE
 
+    @staticmethod
     def predict_named_entities(self, text):
         # Run the model in order to perform ner on the job description
         # Input : text
@@ -21,10 +22,12 @@ class JobInfoExtraction:
 
         return predicted_entities
 
+    @staticmethod
     def extract_named_entities(self, predicted_labels):
         # To be implemented later.
         pass
 
+    @staticmethod
     def match_experience_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -37,18 +40,20 @@ class JobInfoExtraction:
                     acceptable_experiences.append(normalized_experience)
         return acceptable_experiences
 
-    def match_skills_by_custom_ner(self, job):
-        predicted_labels = self.predict_named_entities(job)
-        named_entities = self.extract_named_entities(predicted_labels)
+    # def match_skills_by_custom_ner(self, job):
+    #     predicted_labels = self.predict_named_entities(job)
+    #     named_entities = self.extract_named_entities(predicted_labels)
 
-        job_skills = []
-        for entity_text, entity_type in named_entities:
-            if entity_type == "SKILL":
-                normalized_skill = entity_text.replace("-", " ")
-                if normalized_skill not in job_skills:
-                    job_skills.append(normalized_skill)
-        return job_skills
+    #     job_skills = []
+    #     for entity_text, entity_type in named_entities:
+    #         if entity_type == "SKILL":
+    #             normalized_skill = entity_text.replace("-", " ")
+    #             if normalized_skill not in job_skills:
+    #                 job_skills.append(normalized_skill)
+    #     return job_skills
 
+
+    @staticmethod
     def match_jobtitle_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -61,6 +66,7 @@ class JobInfoExtraction:
                     job_title.append(normalized_job_title)
         return job_title
 
+    @staticmethod
     def match_degrees_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -73,6 +79,7 @@ class JobInfoExtraction:
                     degree_levels.append(degree_level)
         return degree_levels
 
+    @staticmethod
     def get_minimum_degree(self, degrees):
         d = {degree: self.degrees_importance[degree] for degree in degrees}
         return min(d, key=d.get)
