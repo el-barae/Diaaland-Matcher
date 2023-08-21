@@ -19,17 +19,15 @@ class JobInfoExtraction:
 
         predicted_entities = nlp(text)
 
-        # To be implemented later.
         return predicted_entities
 
-    def extract_named_entities(self, decoded_labels):
+    def extract_named_entities(self, predicted_labels):
         # To be implemented later.
         pass
 
     def match_experience_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
-        decoded_labels = self.decode_predictions(predicted_labels)
-        named_entities = self.extract_named_entities(decoded_labels)
+        named_entities = self.extract_named_entities(predicted_labels)
 
         acceptable_experiences = []
         for entity_text, entity_type in named_entities:
@@ -41,8 +39,7 @@ class JobInfoExtraction:
 
     def match_skills_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
-        decoded_labels = self.decode_predictions(predicted_labels)
-        named_entities = self.extract_named_entities(decoded_labels)
+        named_entities = self.extract_named_entities(predicted_labels)
 
         job_skills = []
         for entity_text, entity_type in named_entities:
@@ -54,8 +51,7 @@ class JobInfoExtraction:
 
     def match_jobtitle_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
-        decoded_labels = self.decode_predictions(predicted_labels)
-        named_entities = self.extract_named_entities(decoded_labels)
+        named_entities = self.extract_named_entities(predicted_labels)
 
         job_title = []
         for entity_text, entity_type in named_entities:
@@ -67,8 +63,7 @@ class JobInfoExtraction:
 
     def match_degrees_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
-        decoded_labels = self.decode_predictions(predicted_labels)
-        named_entities = self.extract_named_entities(decoded_labels)
+        named_entities = self.extract_named_entities(predicted_labels)
 
         degree_levels = []
         for entity_text, entity_type in named_entities:
