@@ -77,7 +77,7 @@ class JobInfoExtraction:
                 print((ent.text, ent.label_))
                 if labels[1].replace('-', ' ') not in job_skills:
                     job_skills.append(labels[1].replace('-', ' '))
-            return job_skills
+        return job_skills
 
     @staticmethod
     def match_jobtitle_by_custom_ner(self, job):
