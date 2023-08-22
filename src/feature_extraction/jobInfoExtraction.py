@@ -10,27 +10,27 @@ class JobInfoExtraction:
 
     def __init__(self, custom_model_path, custom_tokenizer_path, jobs, skills_patterns):
         self.jobs = jobs[['description']]
-        self.custom_model = BertForTokenClassification.from_pretrained(custom_model_path)
-        self.custom_tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
+        self.model = BertForTokenClassification.from_pretrained(custom_model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
         self.degrees_importance = DEGREES_IMPORTANCE
         self.skills_patterns_path = skills_patterns_path
 
     @staticmethod
     def predict_named_entities(self, text):
-        # Run the model in order to perform ner on the job description
-        # Input : text
-        # Output : list of identified labels.
-        nlp = pipeline('ner', model = self.model, tokenizer = self.tokenizer, aggregation_strategy="simple")
 
+        nlp = pipeline('ner', model = self.model, tokenizer = self.tokenizer, aggregation_strategy="simple")
         predicted_entities = nlp(text)
 
         return predicted_entities
 
     @staticmethod
     def extract_named_entities(self, predicted_labels):
-        # To be implemented later.
-        pass
 
+        entities = []
+        for element in predicted_labels:
+            entities.append((element['word'], element['entity_group']))
+        return entities
+        
     @staticmethod
     def match_experience_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
@@ -38,10 +38,9 @@ class JobInfoExtraction:
 
         acceptable_experiences = []
         for entity_text, entity_type in named_entities:
-            if entity_type == "EXPERIENCE":
-                normalized_experience = entity_text.replace("-", " ")
-                if normalized_experience not in acceptable_experiences:
-                    acceptable_experiences.append(normalized_experience)
+            if entity_type == "EXP":
+                if entity_text not in acceptable_experiences:
+                    acceptable_experiences.append(entity_text)
         return acceptable_experiences
 
     # def match_skills_by_custom_ner(self, job):
@@ -75,8 +74,8 @@ class JobInfoExtraction:
 
         job_title = []
         for entity_text, entity_type in named_entities:
-            if entity_type == "JOB_TITLE":
-                normalized_job_title = entity_text.replace("-", " ")
+            if entity_type == "JOB":
+                normalized_job_title = entity_text.replace("-", " ").replace('(', '').replace(')', '')
                 if normalized_job_title not in job_title:
                     job_title.append(normalized_job_title)
         return job_title
@@ -88,8 +87,8 @@ class JobInfoExtraction:
 
         degree_levels = []
         for entity_text, entity_type in named_entities:
-            if entity_type == "DEGREE":
-                degree_level = entity_text.split("|")[1]
+            if entity_type == "EDU":
+                degree_level = normalize_degree(entity_text)
                 if degree_level not in degree_levels:
                     degree_levels.append(degree_level)
         return degree_levels
@@ -100,21 +99,18 @@ class JobInfoExtraction:
         return min(d, key=d.get)
 
     def extract_entities(self, row):
-        row_num = jobs[jobs['id'] == row['id']]
-        # recognize and extract entities
-        self.jobs['Skills'] = ""
-        self.jobs['Acceptable experiences'] = ""
-        self.jobs['Degree'] = ""
-        self.jobs['Job title'] = ""
-        job = row['description'].replace('. ', ' ')
+        # Access the row using the 'id' column
+        job = self.jobs[self.jobs['id'] == row['id']]['description'].values[0]
+
+        # Recognize and extract entities
         degrees = self.match_degrees_by_custom_ner(job)
-        if len(degrees) != 0:
-            self.jobs.at[row_num, 'Degree'] = self.get_minimum_degree(degrees)
-        else:
-            self.jobs.at[row_num, 'Degree'] = ""
-        self.jobs.at[row_num, 'Job title'] = self.match_job_title_by_custom_ner(job)
-        self.jobs.at[row_num, 'Skills'] = self.match_skills_by_custom_ner(job)
+        self.jobs.at[self.jobs['id'] == row['id'], 'Degree'] = self.get_minimum_degree(degrees) if degrees else ""
+        self.jobs.at[self.jobs['id'] == row['id'], 'Job title'] = self.match_jobtitle_by_custom_ner(job)
+        self.jobs.at[self.jobs['id'] == row['id'], 'Skills'] = self.match_skills_by_spacy(job)
+        self.jobs.at[self.jobs['id'] == row['id'], 'Acceptable experiences'] = self.match_experience_by_custom_ner(job)
+
         return self.jobs
+
 
 # Example usage
 custom_model_path = "path_to_model"
