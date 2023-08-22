@@ -17,18 +17,12 @@ class JobInfoExtraction:
 
     @staticmethod
     def predict_named_entities(self, text):
-
-        nlp = pipeline('ner', model = self.model, tokenizer = self.tokenizer, aggregation_strategy="simple")
-        predicted_entities = nlp(text)
-
-        return predicted_entities
+        nlp = pipeline('ner', model=self.model, tokenizer=self.tokenizer, aggregation_strategy="simple")
+        return nlp(text)
 
     @staticmethod
     def extract_named_entities(self, predicted_labels):
-
-        entities = []
-        for element in predicted_labels:
-            entities.append((element['word'], element['entity_group']))
+        entities = [(element['word'], element['entity_group']) for element in predicted_labels]
         return entities
         
     @staticmethod
@@ -36,12 +30,10 @@ class JobInfoExtraction:
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
 
-        acceptable_experiences = []
-        for entity_text, entity_type in named_entities:
-            if entity_type == "EXP":
-                if entity_text not in acceptable_experiences:
-                    acceptable_experiences.append(entity_text)
-        return acceptable_experiences
+        acceptable_experiences = {entity_text for entity_text, entity_type in named_entities if entity_type == "EXP"}
+
+        return list(acceptable_experiences)
+
 
     # def match_skills_by_custom_ner(self, job):
     #     predicted_labels = self.predict_named_entities(job)
@@ -72,26 +64,19 @@ class JobInfoExtraction:
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
 
-        job_title = []
-        for entity_text, entity_type in named_entities:
-            if entity_type == "JOB":
-                normalized_job_title = entity_text.replace("-", " ").replace('(', '').replace(')', '')
-                if normalized_job_title not in job_title:
-                    job_title.append(normalized_job_title)
-        return job_title
+        job_titles = {entity_text.replace("-", " ").replace('(', '').replace(')', '') 
+                    for entity_text, entity_type in named_entities if entity_type == "JOB"}
+
+        return list(job_titles)
 
     @staticmethod
     def match_degrees_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
 
-        degree_levels = []
-        for entity_text, entity_type in named_entities:
-            if entity_type == "EDU":
-                degree_level = normalize_degree(entity_text)
-                if degree_level not in degree_levels:
-                    degree_levels.append(degree_level)
-        return degree_levels
+        degree_levels = {normalize_degree(entity_text) for entity_text, entity_type in named_entities if entity_type == "EDU"}
+
+        return list(degree_levels)
 
     @staticmethod
     def get_minimum_degree(self, degrees):
