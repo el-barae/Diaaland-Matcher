@@ -59,24 +59,13 @@ class JobInfoExtraction:
     @staticmethod
     def match_skills_by_spacy(self, job):
         language = detect(job)
+        nlp = French() if language.lower() == 'fr' else English()
 
-        if language.lower() == 'fr':
-            nlp = French()
-        else:
-            nlp = English()
-
-        patterns_path = self.skills_patterns_path
         ruler = nlp.add_pipe('entity_ruler')
-        ruler.from_disk(patterns_path)
+        ruler.from_disk(self.skills_patterns_path)
 
         doc = nlp(job)
-        job_skills = []
-        for ent in doc.ents:
-            labels = ent.label_.split('|')
-            if labels[0] == 'SKILL':
-                print((ent.text, ent.label_))
-                if labels[1].replace('-', ' ') not in job_skills:
-                    job_skills.append(labels[1].replace('-', ' '))
+        job_skills = list(set([ent.label_.split('|')[1].replace('-', ' ') for ent in doc.ents if ent.label_.startswith('SKILL')]))
         return job_skills
 
     @staticmethod
