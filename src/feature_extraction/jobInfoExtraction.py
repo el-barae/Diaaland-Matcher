@@ -89,10 +89,10 @@ class JobInfoExtraction:
 
         # Recognize and extract entities
         degrees = self.match_degrees_by_custom_ner(job)
-        self.jobs.at[self.jobs['id'] == row['id'], 'Degree'] = self.get_minimum_degree(degrees) if degrees else ""
-        self.jobs.at[self.jobs['id'] == row['id'], 'Job title'] = self.match_jobtitle_by_custom_ner(job)
-        self.jobs.at[self.jobs['id'] == row['id'], 'Skills'] = self.match_skills_by_spacy(job)
-        self.jobs.at[self.jobs['id'] == row['id'], 'Acceptable experiences'] = self.match_experience_by_custom_ner(job)
+        self.jobs.at[self.jobs['id'] == row['id'], 'degrees'] = self.get_minimum_degree(degrees) if degrees else ""
+        self.jobs.at[self.jobs['id'] == row['id'], 'job_title'] = self.match_jobtitle_by_custom_ner(job)
+        self.jobs.at[self.jobs['id'] == row['id'], 'skills'] = self.match_skills_by_spacy(job)
+        self.jobs.at[self.jobs['id'] == row['id'], 'experiences'] = self.match_experience_by_custom_ner(job)
 
         return self.jobs
 

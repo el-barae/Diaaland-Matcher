@@ -1,117 +1,126 @@
 import ast 
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer, util
+import numpy as np
 from resources import DEGREE_IMPORTANCE
 
 
 class Matcher:
     
-    def __init__(self, resume, jobs):
-        self.resume = resume
+    def __init__(self, resumes, jobs):
+        self.resumes = resumes
         self.jobs = jobs
         self.degree_importance = DEGREE_IMPORTANCE
 
-    def modifying_type_resume(self, resume):
-        for i in range(len(resume["degrees"])):
-            resume["degrees"][i] = ast.literal_eval(resume["degrees"][i])
-        for i in range(len(resume["skills"])):
-            resume["skills"][i] = ast.literal_eval(resume["skills"][i])
-        for i in range(len(resume["experiences"])):
-            resume["experiences"][i] = ast.literal_eval(resume["experiences"][i])
-        resume['job_title'][i] = ast.literal_eval(resume['job_title'])
-        return resume
+    @staticmethod
+    def modify_data_type(data):
+        for key in ["degrees", "skills", "experiences"]:
+            data[key] = [ast.literal_eval(item) for item in data[key]]
+        data['job_title'] = ast.literal_eval(data['job_title'])
+        return data
 
-    def job(self, job):
-        for i in range(len(jon["degrees"])):
-            job["degrees"][i] = ast.literal_eval(job["degrees"][i])
-        for i in range(len(resume["skills"])):
-            job["skills"][i] = ast.literal_eval(job["skills"][i])
-        for i in range(len(resume["experiences"])):
-            job["experiences"][i] = ast.literal_eval(job["experiences"][i])
-        job['job_title'][i] = ast.literal_eval(job['job_title'])
-        return job
+    def modify_type_resume(self):
+        for i in range(len(self.resumes)):
+            self.resumes[i] = self.modify_data_type(self.resumes[i])
+        return self.resumes
+
+    def modify_type_job(self):
+        for i in range(len(self.jobs)):
+            self.jobs[i] = self.modify_data_type(self.jobs[i])
+        return self.jobs
 
     def semantic_similarity(self, job_feature, resume_feature):
         model = SentenceTransformer("model_name") # still have to choose the best model for the task
+        
+        # Create sentence embeddings:
+        job_embeddings = self.model.encode(job_feature, convert_to_tensor=True)
+        resume_embeddings = self.model.encode(resume_feature, convert_to_tensor=True)
 
-        score = 0
-        sent = job_feature + resume_feature
-        sent_embedding = model.encode(sent)
-        for i, word in enumerate(job):
-            if word in resume:
-                score += 1
-            else:
-                if max(cosine_similarity([sen_embeddings[i]], sen_embeddings[len(job):])[0]) >= 0.5:
-                    score += max(cosine_similarity([sen_embeddings[i]], sen_embeddings[len(job):])[0])
-        score = score / len(job)
-        return score
+        # Calculate the cosine similarity
+        cosine_scores = util.pytorch_cos_sim(job_embeddings, resume_embeddings)
 
-    # df --> dictionary and the values as lists.
+        # Calculate the mean:
+        similarity_score = np.mean(cosine_scores.cpu().numpy())
+        return similarity_score
+
     def degree_matching(self, resumes, jobs, job_index):
         # Find the minimum required degree in the job:
-        job_degree = self.degree_importance[min([jobs["degrees"][job_index][i] for i in range(len(jobs["degree"][job_index]))])]
-        resumes['Degree measure' + str(job_index)] = 0
+        job_degrees = jobs["degrees"][job_index]
+        min_required_degree = min(job_degrees, key=lambda degree: self.degree_importance[degree])
+
+        # Create a new column to store the degree measure
+        degree_measure_column = 'Degree job ' + str(job_index) + ' matching'
+        resumes[degree_measure_column] = 0
+
+        # Iterate through resumes and calculate the degree measure
         for i, resume in resumes.iterrows():
-            resume_degree = self.degree_importance(max([resume['degrees'][i] for i in range(len(resume['degrees'][i]))]))
-            if resume_degree >= job_degree:
-                resumes.loc[i, 'Degree measure ' + str(job_index)] = 1
+            resume_degrees = resume['degrees']
+            max_resume_degree = max(resume_degrees, key=lambda degree: self.degree_importance.get(degree, 0))
+            
+            if self.degree_importance.get(max_resume_degree, 0) >= self.degree_importance[min_required_degree]:
+                resumes.at[i, degree_measure_column] = 1
+
         return resumes
+
 
     def job_title_matching(self, resumes, jobs, job_index):
         job_job_title = jobs['job_title'][job_index]
-        resumes['Job title measure ' + str(job_index)] = 0
-        for i, resume in resumes.iterrows():
-            resume_job_title = resume['job_title']
-            resumes.loc[i, 'Job title measure ' + str(job_index)] = semantic_similarity(resume_job_title, job_job_title)
+        job_title_measure_column = 'Job title job ' + str(job_index) + ' matching'
+
+        resumes[job_title_measure_column] = resumes['job_title'].apply(lambda resume_job_title: semantic_similarity(resume_job_title, job_job_title))
+
         return resumes
+
+    @staticmethod
+    def calculate_experience_similarity(job_exp, resume_experiences):
+        max_similarity = max(semantic_similarity(job_exp, exp) for exp in resume_experiences)
+        return max_similarity
 
     def experiences_matching(self, resumes, jobs, job_index):
         # Still didn't figure out how to take into consideration both years of exp and domaine of exp
+
         job_required_experiences = jobs['experiences'][job_index]
-        resumes['Experiences measure ' + str(job_index)] = 0
+        job_experience_measure_column = 'Experiences job ' + str(job_index) + ' matching'
         for i, resume in resumes.iterrows():
             resume_experiences = resume['experiences']
-            score = 0
-            for job_exp in job_required_experiences:
-                temp = 0
-                for resume_exp in resumes_experiences:
-                    temp = max(temp, semantic_similarity(job_exp, resume_exp))
-                score += temp
-            resumes.loc[i, 'Experiences measure ' + str(job_index)] = score / len(job_exp)
+            total_similarity = sum(
+                self.calculate_experience_similarity(job_exp, resume_experiences)
+                for job_exp in job_required_experiences
+            )
+            avg_similarity = total_similarity / len(job_required_experiences)
+            resumes.at[i, job_experience_measure_column] = avg_similarity
         return resumes
 
     def skills_matching(self, resumes, jobs, job_index):
-        job_skills = jobs['skills'][job_index]
-        job_skills = list(set(job_skills)) # remove repeated skills
-        resumes['skills measure '+ str(job_index)] = 0
+        job_required_skills = jobs['skills'][job_index]
+        job_skills_measure_column = 'Skills job ' + str(job_index) + ' matching'
+        job_skills = set(job_required_skills) # remove duplicates
+
         for i, resume in resumes.iterrows():
-            resume_skills = resume['skills']
-            score = 0
-            for skill in job_skills:
-                if skill in resume_skills:
-                    score += 1
-                else:
-                    score += max([semantic_similarity(skill, resume_skills[i]) for i in range(len(resume_skills))])
-        resumes['skills measure '+ str(job_index)] = score / len(job_skills)
+            resume_skills = set(resume['skills']) # remove duplicates
+            score = sum(1 if skill in resume_skills else max(semantic_similarity(skill, resume_skill) for resume_skill in resume_skills) for skill in job_skills)
+            avg_score = score / len(job_skills)
+            resumes.at[i, job_skills_measure_column] = avg_score
         return resumes
 
     def matching_score(self, resumes, jobs, job_index):
-        # matching degrees:
+        # Matching degrees, job_title, skills, and experiences
         resumes = self.degree_matching(resumes, jobs, job_index)
-        # matching job_title:
         resumes = self.job_title_matching(resumes, jobs, job_index)
-        # matching skills:
         resumes = self.skills_matching(resumes, jobs, job_index)
-        # matching experiences
         resumes = self.experiences_matching(resumes, jobs, job_index)
 
-        for i, row in self.resumes.iterrows():
-            skills_score = resumes['Skills job ' + str(job_index) + ' matching'][i]
-            degree_score = resumes['Degree job ' + str(job_index) + ' matching'][i]
-            jobtitle_score = resumes['Job title job ' + str(job_index) + ' matching'][i]
-            experiences_score = resumes['Experiences job ' + str(job_index) + ' matching'][i]
-            final_score = (0.2 * degree_score + 0.3 * skills_score + 0.3 * experiences_score + 0.2 * jobtitle_score)
-            resumes.loc[i, "matching score job " + str(job_index)] = round(final_score, 3)
+        job_title_col = 'Job title job ' + str(job_index) + ' matching'
+        skills_col = 'Skills job ' + str(job_index) + ' matching'
+        degree_col = 'Degree job ' + str(job_index) + ' matching'
+        experiences_col = 'Experiences job ' + str(job_index) + ' matching'
+        matching_score_col = "Matching score job " + str(job_index)
+
+        resumes[matching_score_col] = (
+            0.2 * resumes[degree_col] +
+            0.3 * resumes[skills_col] +
+            0.3 * resumes[experiences_col] +
+            0.2 * resumes[job_title_col]
+        ).round(3)
 
         return resumes
 
