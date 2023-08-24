@@ -7,24 +7,22 @@ from langdetect import detect
 
 class JobInfoExtraction:
 
-    def __init__(self, custom_model_path, custom_tokenizer_path, jobs, DEGREES_IMPORTANCE, skills_patterns_path):
-        self.jobs = jobs
+    def __init__(self, custom_model_path, custom_tokenizer_path, DEGREES_IMPORTANCE, skills_patterns_path, session, DataModel):
         self.model = BertForTokenClassification.from_pretrained(custom_model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
         self.degrees_importance = DEGREES_IMPORTANCE
         self.skills_patterns_path = skills_patterns_path
+        self.session = session
+        self.DataModel = DataModel
 
-    @staticmethod
     def predict_named_entities(self, text):
         nlp = pipeline('ner', model=self.model, tokenizer=self.tokenizer, aggregation_strategy="simple")
         return nlp(text)
 
-    @staticmethod
     def extract_named_entities(self, predicted_labels):
         entities = [(element['word'], element['entity_group']) for element in predicted_labels]
         return entities
         
-    @staticmethod
     def match_experience_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -46,7 +44,6 @@ class JobInfoExtraction:
     #                 job_skills.append(normalized_skill)
     #     return job_skills
 
-    @staticmethod
     def match_skills_by_spacy(self, job):
         language = detect(job)
         nlp = French() if language.lower() == 'fr' else English()
@@ -58,7 +55,6 @@ class JobInfoExtraction:
         job_skills = list(set([ent.label_.split('|')[1].replace('-', ' ') for ent in doc.ents if ent.label_.startswith('SKILL')]))
         return job_skills
 
-    @staticmethod
     def match_jobtitle_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -68,7 +64,6 @@ class JobInfoExtraction:
 
         return list(job_titles)
 
-    @staticmethod
     def match_degrees_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -77,23 +72,36 @@ class JobInfoExtraction:
 
         return list(degree_levels)
 
-    @staticmethod
     def get_minimum_degree(self, degrees):
         d = {degree: self.degrees_importance[degree] for degree in degrees}
         return min(d, key=d.get)
 
     def extract_entities(self, job_id):
-        # Access the row using the 'id' column
-        job = self.jobs[self.jobs['id'] == job_id]['description'].values[0]
+        # Retrieve the job description from the database
+        job_record = self.session.query(self.DataModel).filter(self.DataModel.id == job_id).first()
+        if not job_record:
+            return None # Handle the case where the job_id doesn't exist in the database
 
-        # Recognize and extract entities
-        degrees = self.match_degrees_by_custom_ner(job)
-        self.jobs.at[self.jobs['id'] == job_id, 'degrees'] = self.get_minimum_degree(degrees) if degrees else ""
-        self.jobs.at[self.jobs['id'] == job_id, 'job_title'] = self.match_jobtitle_by_custom_ner(job)
-        self.jobs.at[self.jobs['id'] == job_id, 'skills'] = self.match_skills_by_spacy(job)
-        self.jobs.at[self.jobs['id'] == job_id, 'experiences'] = self.match_experience_by_custom_ner(job)
+        job_description = job_record.description
 
-        return self.jobs
+        # Initialize the extracted_job dictionary
+        extracted_job = {'id': job_id}
+
+        # Extract degrees from the job description
+        degrees = self.match_degrees_by_custom_ner(job_description)
+        extracted_job['degrees'] = self.get_minimum_degree(degrees) if degrees else ""
+
+        # Extract job titles from the job description
+        extracted_job['job_title'] = self.match_jobtitle_by_custom_ner(job_description)
+
+        # Extract skills from the job description
+        extracted_job['skills'] = self.match_skills_by_spacy(job_description)
+
+        # Extract experiences from the job description
+        extracted_job['experiences'] = self.match_experience_by_custom_ner(job_description)
+
+
+        return extracted_job
 
 
 # Example usage
