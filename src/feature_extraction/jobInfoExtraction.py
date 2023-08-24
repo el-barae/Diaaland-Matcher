@@ -85,7 +85,7 @@ class JobInfoExtraction:
     def extract_entities(self):
 
         for i, row in jobs.iterrows():
-            job = jobs[i]
+            job = self.jobs[i]
 
             # Recognize and extract entities
             degrees = self.match_degrees_by_custom_ner(job)
