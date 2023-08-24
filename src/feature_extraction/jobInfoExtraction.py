@@ -8,7 +8,7 @@ from langdetect import detect
 class JobInfoExtraction:
 
     def __init__(self, custom_model_path, custom_tokenizer_path, jobs, DEGREES_IMPORTANCE, skills_patterns_path):
-        self.jobs = jobs[['description']]
+        self.jobs = jobs
         self.model = BertForTokenClassification.from_pretrained(custom_model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
         self.degrees_importance = DEGREES_IMPORTANCE
@@ -82,17 +82,16 @@ class JobInfoExtraction:
         d = {degree: self.degrees_importance[degree] for degree in degrees}
         return min(d, key=d.get)
 
-    def extract_entities(self):
+    def extract_entities(self, job_id):
+        # Access the row using the 'id' column
+        job = self.jobs[self.jobs['id'] == job_id]['description'].values[0]
 
-        for i, row in jobs.iterrows():
-            job = self.jobs[i]
-
-            # Recognize and extract entities
-            degrees = self.match_degrees_by_custom_ner(job)
-            self.jobs.at[i, 'degrees'] = self.get_minimum_degree(degrees) if degrees else ""
-            self.jobs.at[i, 'job_title'] = self.match_jobtitle_by_custom_ner(job)
-            self.jobs.at[i, 'skills'] = self.match_skills_by_spacy(job)
-            self.jobs.at[i, 'experiences'] = self.match_experience_by_custom_ner(job)
+        # Recognize and extract entities
+        degrees = self.match_degrees_by_custom_ner(job)
+        self.jobs.at[self.jobs['id'] == job_id, 'degrees'] = self.get_minimum_degree(degrees) if degrees else ""
+        self.jobs.at[self.jobs['id'] == job_id, 'job_title'] = self.match_jobtitle_by_custom_ner(job)
+        self.jobs.at[self.jobs['id'] == job_id, 'skills'] = self.match_skills_by_spacy(job)
+        self.jobs.at[self.jobs['id'] == job_id, 'experiences'] = self.match_experience_by_custom_ner(job)
 
         return self.jobs
 
