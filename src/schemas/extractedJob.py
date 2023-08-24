@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 
 # Define Pydantic model for API input/output
-class JobModel(BaseModel):
+class ExtractedJobModel(BaseModel):
     id: int = Field(default=None, alias="id")
     degrees : list = Field()
     job_title : str = Field()
