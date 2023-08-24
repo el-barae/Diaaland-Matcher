@@ -7,7 +7,7 @@ from langdetect import detect
 
 class JobInfoExtraction:
 
-    def __init__(self, custom_model_path, custom_tokenizer_path, jobs, DEGREES_IMPORTANCE, skills_patterns):
+    def __init__(self, custom_model_path, custom_tokenizer_path, jobs, DEGREES_IMPORTANCE, skills_patterns_path):
         self.jobs = jobs[['description']]
         self.model = BertForTokenClassification.from_pretrained(custom_model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
@@ -82,25 +82,26 @@ class JobInfoExtraction:
         d = {degree: self.degrees_importance[degree] for degree in degrees}
         return min(d, key=d.get)
 
-    def extract_entities(self, row):
-        # Access the row using the 'id' column
-        job = self.jobs[self.jobs['id'] == row['id']]['description'].values[0]
+    def extract_entities(self):
 
-        # Recognize and extract entities
-        degrees = self.match_degrees_by_custom_ner(job)
-        self.jobs.at[self.jobs['id'] == row['id'], 'degrees'] = self.get_minimum_degree(degrees) if degrees else ""
-        self.jobs.at[self.jobs['id'] == row['id'], 'job_title'] = self.match_jobtitle_by_custom_ner(job)
-        self.jobs.at[self.jobs['id'] == row['id'], 'skills'] = self.match_skills_by_spacy(job)
-        self.jobs.at[self.jobs['id'] == row['id'], 'experiences'] = self.match_experience_by_custom_ner(job)
+        for i, row in jobs.iterrows():
+            job = jobs[i]
+
+            # Recognize and extract entities
+            degrees = self.match_degrees_by_custom_ner(job)
+            self.jobs.at[i, 'degrees'] = self.get_minimum_degree(degrees) if degrees else ""
+            self.jobs.at[i, 'job_title'] = self.match_jobtitle_by_custom_ner(job)
+            self.jobs.at[i, 'skills'] = self.match_skills_by_spacy(job)
+            self.jobs.at[i, 'experiences'] = self.match_experience_by_custom_ner(job)
 
         return self.jobs
 
 
 # Example usage
-custom_model_path = "path_to_model"
-custom_tokenizer_path = "path_to_tokenizer"
-jobs_data = pd.read_csv("path_to_jobs_data.csv")
+# custom_model_path = "path_to_model"
+# custom_tokenizer_path = "path_to_tokenizer"
+# jobs_data = pd.read_csv("path_to_jobs_data.csv")
 
-job_info_extractor = JobInfoExtraction(custom_model_path, custom_tokenizer_path, jobs_data, DEGREES_IMPORTANCE, skills_patterns)
-extracted_info = job_info_extractor.extract_entities()
-print(extracted_info)
+# job_info_extractor = JobInfoExtraction(custom_model_path, custom_tokenizer_path, jobs_data, DEGREES_IMPORTANCE, skills_patterns)
+# extracted_info = job_info_extractor.extract_entities()
+# print(extracted_info)
