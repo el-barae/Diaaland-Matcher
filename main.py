@@ -3,6 +3,7 @@ from src.schemas.extractedJob import JobModel
 from src.db_utils.db_connector import db_connect
 from src.feature_extraction.jobInfoExtraction import JobInfoExtraction
 from src.feature_extraction.Matcher import Matcher
+from resources import DEGREE_IMPORTANCE
 import json
 import pandas as pd
 from fastapi import FastAPI

@@ -1,6 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 import pandas as pd
-from resource import DEGREES_IMPORTANCE
 from spacy.lang.fr import French
 from spacy.lang.en import English
 from langdetect import detect
@@ -8,7 +7,7 @@ from langdetect import detect
 
 class JobInfoExtraction:
 
-    def __init__(self, custom_model_path, custom_tokenizer_path, jobs, skills_patterns):
+    def __init__(self, custom_model_path, custom_tokenizer_path, jobs, DEGREES_IMPORTANCE, skills_patterns):
         self.jobs = jobs[['description']]
         self.model = BertForTokenClassification.from_pretrained(custom_model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
@@ -102,6 +101,6 @@ custom_model_path = "path_to_model"
 custom_tokenizer_path = "path_to_tokenizer"
 jobs_data = pd.read_csv("path_to_jobs_data.csv")
 
-job_info_extractor = JobInfoExtraction(custom_model_path, custom_tokenizer_path, jobs_data)
+job_info_extractor = JobInfoExtraction(custom_model_path, custom_tokenizer_path, jobs_data, DEGREES_IMPORTANCE, skills_patterns)
 extracted_info = job_info_extractor.extract_entities()
 print(extracted_info)

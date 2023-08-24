@@ -1,12 +1,11 @@
 import ast 
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-from resources import DEGREE_IMPORTANCE
 
 
 class Matcher:
     
-    def __init__(self, resumes, jobs):
+    def __init__(self, resumes, DEGREE_IMPORTANCE, jobs):
         self.resumes = resumes
         self.jobs = jobs
         self.degree_importance = DEGREE_IMPORTANCE
