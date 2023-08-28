@@ -1,10 +1,10 @@
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import ForeignKey, String, Column, Integer, Date
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import quote_ident
 
+Base = declarative_base()
 
-class Candidate(DeclarativeBase):
+class Candidate(Base):
     __tablename__ = "candidates"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -13,14 +13,14 @@ class Candidate(DeclarativeBase):
     description = Column(String)
     
 
-    skills = relationship(secondary="candidate_skills")
+    skills = relationship("Skills",secondary="candidate_skills")
+    jobs = relationship("Jobs", secondary="candidate_jobs")
     experiences = relationship("Experiences", back_populates="candidate")
     certifications = relationship("Certificates", back_populates="candidate")
     degrees = relationship("Educations", back_populates="candidates")
-    jobs = relationship(secondary="candidate_jobs")
 
 
-class Jobs(DeclarativeBase):
+class Jobs(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -28,7 +28,7 @@ class Jobs(DeclarativeBase):
     description = Column(String)
 
 
-class Candidates_jobs(DeclarativeBase):
+class Candidates_jobs(Base):
     __tablename__ = "candidates_jobs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -36,15 +36,15 @@ class Candidates_jobs(DeclarativeBase):
     job_id = Column(Integer, ForeignKey('jobs.id'))
 
 
-class Skills(DeclarativeBase):
+class Skills(Base):
     __tablename__ = "skills"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    type_ = Column(String, name=quote_ident("type"))
+    type_ = Column(String)
 
 
-class Candidates_skills(DeclarativeBase):
+class Candidates_skills(Base):
     __tablename__ = "candidate_skills"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -53,7 +53,7 @@ class Candidates_skills(DeclarativeBase):
     score = Column(Integer)
 
 
-class Experiences(DeclarativeBase):
+class Experiences(Base):
     __tablename__ = "experiences"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -61,7 +61,7 @@ class Experiences(DeclarativeBase):
     candidate_id = Column(Integer, ForeignKey('candidates.id'))
 
 
-class Educations(DeclarativeBase):
+class Educations(Base):
     __tablename__ = "educations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -70,7 +70,7 @@ class Educations(DeclarativeBase):
     candidate_id = Column(Integer, ForeignKey('candidates.id'))
 
 
-class Certificates(DeclarativeBase):
+class Certificates(Base):
     __tablename__ = "certificates"
 
     id = Column(Integer, primary_key=True, index=True)
