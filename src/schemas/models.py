@@ -50,7 +50,6 @@ class Candidates_skills(Base):
     id = Column(Integer, primary_key=True, index=True)
     candidate_id = Column(Integer, ForeignKey('candidates.id'))
     skill_id = Column(Integer, ForeignKey('skills.id'))
-    score = Column(Integer)
 
 
 class Experiences(Base):
