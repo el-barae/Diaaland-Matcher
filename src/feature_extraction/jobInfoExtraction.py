@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+from transformers import AutoTokenizer, BertForTokenClassification, pipeline
 import pandas as pd
 from spacy.lang.fr import French
 from spacy.lang.en import English
