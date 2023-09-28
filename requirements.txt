@@ -1,0 +1,8 @@
+sentence_transformers
+pandas
+numpy
+sqlalchemy
+langdetect
+spacy
+scikit-learn
+pydantic
