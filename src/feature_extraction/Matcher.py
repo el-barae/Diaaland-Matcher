@@ -68,7 +68,7 @@ class Matcher:
 
         return resumes
 
-    def calculate_experience_similarity(job_exp, resume_experiences):
+    def calculate_experience_similarity(self, job_exp, resume_experiences):
         max_similarity = max(self.semantic_similarity(job_exp, exp) for exp in resume_experiences)
         return max_similarity
 
