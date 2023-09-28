@@ -25,7 +25,7 @@ class Matcher:
 
     def modify_type_job(self):
         self.job_entities = self.modify_data_type(self.job_entities)
-        return self.job
+        return self.job_entities
 
     def semantic_similarity(self, job_feature, resume_feature):
         model = SentenceTransformer("model_name") # still have to choose the best model for the task
@@ -47,7 +47,7 @@ class Matcher:
         min_required_degree = min(job_degrees, key=lambda degree: self.degree_importance[degree])
 
         # Create a new key:value pair to store the degree measure
-        degree_measure = 'Degree job ' + str(job_index) + ' matching'
+        degree_measure = 'Degree job matching'
 
         # Iterate through resumes and calculate the degree measure
         for i, resume in enumerate(resumes):
@@ -59,26 +59,24 @@ class Matcher:
 
         return resumes
 
-
     def job_title_matching(self, resumes, job_entities):
         job_job_title = job_entities['job_title']
-        job_title_measure = 'Job title job ' + str(job_index) + ' matching'
+        job_title_measure = 'Job title job matching'
         
         for i, resume in enumerate(resumes):
-            resumes[i][job_title_measure] = semantic_similarity(resume['job_title'], job_job_title)
+            resumes[i][job_title_measure] = self.semantic_similarity(resume['job_title'], job_job_title)
 
         return resumes
 
-    @staticmethod
     def calculate_experience_similarity(job_exp, resume_experiences):
-        max_similarity = max(semantic_similarity(job_exp, exp) for exp in resume_experiences)
+        max_similarity = max(self.semantic_similarity(job_exp, exp) for exp in resume_experiences)
         return max_similarity
 
     def experiences_matching(self, resumes, job_entities):
         # Still didn't figure out how to take into consideration both years of exp and domaine of exp
 
         job_required_experiences = job_entities['experiences']
-        job_experience_measure = 'Experiences job ' + str(job_index) + ' matching'
+        job_experience_measure = 'Experiences job matching'
         for i, resume in enumerate(resumes):
             resume_experiences = resume['experiences']
             total_similarity = sum(
@@ -91,12 +89,12 @@ class Matcher:
 
     def skills_matching(self, resumes, job_entities):
         job_required_skills = job_entities['skills']
-        job_skills_measure = 'Skills job ' + str(job_index) + ' matching'
+        job_skills_measure = 'Skills job matching'
         job_skills = set(job_required_skills) # remove duplicates
 
         for i, resume in enumerate(resumes):
             resume_skills = set(resume['skills']) # remove duplicates
-            score = sum(1 if skill in resume_skills else max(semantic_similarity(skill, resume_skill) for resume_skill in resume_skills) for skill in job_skills)
+            score = sum(1 if skill in resume_skills else max(self.semantic_similarity(skill, resume_skill) for resume_skill in resume_skills) for skill in job_skills)
             avg_score = score / len(job_skills)
             resumes[i][job_skills_measure] = avg_score
         return resumes
@@ -108,11 +106,11 @@ class Matcher:
         resumes = self.skills_matching(resumes, job_entities)
         resumes = self.experiences_matching(resumes, job_entities)
 
-        job_title = 'Job title job ' + str(job_index) + ' matching'
-        skills = 'Skills job ' + str(job_index) + ' matching'
-        degree = 'Degree job ' + str(job_index) + ' matching'
-        experiences = 'Experiences job ' + str(job_index) + ' matching'
-        matching_score = "Matching score job " + str(job_index)
+        job_title = 'Job title job matching'
+        skills = 'Skills job matching'
+        degree = 'Degree job matching'
+        experiences = 'Experiences job matching'
+        matching_score = "Matching score job"
 
         for i, resume in enumerate(resumes):
             resumes[i][matching_score] = (
