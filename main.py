@@ -52,6 +52,9 @@ def extract_job(job_id):
     # Add Extracted certificates to the database:
     add_to_database(job_entities, session, Certificates, "certificates")
 
+    # Add Extracted Job title to the database:
+    add_to_database(job_entities, session, Jobs, "job_title")
+
 
     # Convert the job data to JSON
     job_json = transform_dict_to_json(job_entities)
