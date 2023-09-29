@@ -1,6 +1,4 @@
-from src.schemas.matchedResume import ResumeMatchedModel
-from src.schemas.extractedJob import ExtractedJobModel
-from src.schemas.job import JobDBModel
+from src.schemas.models import Jobs, Skills, Experiences, Educations, Certificates
 from src.db_utils.db_connector import db_connect
 from src.feature_extraction.jobInfoExtraction import JobInfoExtraction
 from src.feature_extraction.Matcher import Matcher
@@ -14,6 +12,15 @@ def transform_dict_to_json(data_dict):
     json_data = json.dumps(data_dict, indent=4)
     return json_data
 
+def add_to_database(job_entities, session, model, entity):
+    for label in job_entities[entity]:
+        found = session.query(model).filter(model.name == label).first()
+
+        if found is None:
+            found = model(name=label, type_=model.__tablename__)
+            session.add(found)
+    session.commit()
+    session.close()
 
 app = FastAPI()
 
@@ -28,30 +35,29 @@ def extract_job(job_id):
     session = db_connect("postgresql", "username", "host", "database")
     
     # Initialize the job extractor
-    job_extractor = JobInfoExtraction(model_path, tokenizer_path, DEGREE_IMPORTANCE, skills_pattern_path, session, JobDBModel)
+    job_extractor = JobInfoExtraction(model_path, tokenizer_path, DEGREE_IMPORTANCE, skills_pattern_path, session, Jobs)
 
     # Extract job information
-    job = job_extractor.extract_entities(job_id)
+    job_entities = job_extractor.extract_entities(job_id)
 
-    # Create an ExtractedJobModel instance
-    extracted_job = ExtractedJobModel(
-            id = job['id'],
-            degrees = job['degrees'],
-            job_title = job['job_title'],
-            skills = job['skills'],
-            experiences = job['experiences']
-        )
+    # Add Extracted skills to the database:
+    add_to_database(job_entities, session, Skills, "skills")
 
-    # Add the extracted job data to the database
-    session.add(extracted_job)
-    session.commit()
-    session.close()
+    # Add Extracted experiences to the database:
+    add_to_database(job_entities, session, Experiences, "experiences")
+
+    # Add Extracted educations to the database:
+    add_to_database(job_entities, session, Educations, "degrees")
+
+    # Add Extracted certificates to the database:
+    add_to_database(job_entities, session, Certificates, "certificates")
+
 
     # Convert the job data to JSON
-    job_json = transform_dict_to_json(job)
+    job_json = transform_dict_to_json(job_entities)
 
 
-    return jobs_json
+    return job_json
 
 
 
