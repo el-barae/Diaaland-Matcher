@@ -1,15 +1,18 @@
+"""
 from src.schemas.models import Jobs, Skills, Experiences, Educations, Certificates
 from sqlalchemy.orm import Session
 from src.db_utils.db_connector import db_connect
 from src.feature_extraction.jobInfoExtraction import JobInfoExtraction
-from src.feature_extraction.Matcher import Matcher
+#from src.feature_extraction.Matcher import Matcher
 from resources import DEGREE_IMPORTANCE
 import json
-from fastapi import FastAPI, Depends, HTTPException
+"""
+from fastapi import FastAPI
+from routes import router
 
-
+"""
 def get_db():
-    db = db_connect("postgresql", "username", "host", "database") 
+    db = db_connect("postgresql", "postgres", "host", "database")
     try:
         yield db
     finally:
@@ -57,7 +60,17 @@ async def matching(job_id):
     # Get the job offer:
     job = session.query(Jobs).filter(Jobs.id == job_id).first()
 
+"""
 
+app = FastAPI()
+
+# Include your routes
+app.include_router(router)
+
+# Run the app
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app, host='127.0.0.1', port=8000)
 
 
 if __name__ == "__main__":

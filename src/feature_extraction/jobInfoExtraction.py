@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer, BertForTokenClassification, pipeline
 import pandas as pd
-from spacy.lang.fr import French
-from spacy.lang.en import English
+#from spacy.lang.fr import French
+#from spacy.lang.en import English
 from langdetect import detect
 
 
@@ -43,7 +43,7 @@ class JobInfoExtraction:
     #             if normalized_skill not in job_skills:
     #                 job_skills.append(normalized_skill)
     #     return job_skills
-
+"""
     def match_skills_by_spacy(self, job):
         language = detect(job)
         nlp = French() if language.lower() == 'fr' else English()
@@ -54,7 +54,7 @@ class JobInfoExtraction:
         doc = nlp(job)
         job_skills = list(set([ent.label_.split('|')[1].replace('-', ' ') for ent in doc.ents if ent.label_.startswith('SKILL')]))
         return job_skills
-
+    
     def match_jobtitle_by_custom_ner(self, job):
         predicted_labels = self.predict_named_entities(job)
         named_entities = self.extract_named_entities(predicted_labels)
@@ -102,7 +102,7 @@ class JobInfoExtraction:
 
 
         return extracted_job
-
+"""
 
 # Example usage
 # custom_model_path = "path_to_model"

@@ -1,11 +1,12 @@
-import ast 
+import ast
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
+
 
 # get data from the data base as a list of dictionaries and then get the elements of the dictionary one by one from different tables in the database
 
 class Matcher:
-    
+
     def __init__(self, resumes, DEGREE_IMPORTANCE, job_entities):
         self.resumes = resumes
         self.job_entities = job_entities
@@ -28,8 +29,8 @@ class Matcher:
         return self.job_entities
 
     def semantic_similarity(self, job_feature, resume_feature):
-        model = SentenceTransformer("model_name") # still have to choose the best model for the task
-        
+        model = SentenceTransformer("model_name")  # still have to choose the best model for the task
+
         # Create sentence embeddings:
         job_embeddings = self.model.encode(job_feature, convert_to_tensor=True)
         resume_embeddings = self.model.encode(resume_feature, convert_to_tensor=True)
@@ -53,7 +54,7 @@ class Matcher:
         for i, resume in enumerate(resumes):
             resume_degrees = resume['degrees']
             max_resume_degree = max(resume_degrees, key=lambda degree: self.degree_importance.get(degree, 0))
-            
+
             if self.degree_importance.get(max_resume_degree, 0) >= self.degree_importance[min_required_degree]:
                 resumes[i][degree_measure] = 1
 
@@ -62,7 +63,7 @@ class Matcher:
     def job_title_matching(self, resumes, job_entities):
         job_job_title = job_entities['job_title']
         job_title_measure = 'Job title job matching'
-        
+
         for i, resume in enumerate(resumes):
             resumes[i][job_title_measure] = self.semantic_similarity(resume['job_title'], job_job_title)
 
@@ -90,11 +91,13 @@ class Matcher:
     def skills_matching(self, resumes, job_entities):
         job_required_skills = job_entities['skills']
         job_skills_measure = 'Skills job matching'
-        job_skills = set(job_required_skills) # remove duplicates
+        job_skills = set(job_required_skills)  # remove duplicates
 
         for i, resume in enumerate(resumes):
-            resume_skills = set(resume['skills']) # remove duplicates
-            score = sum(1 if skill in resume_skills else max(self.semantic_similarity(skill, resume_skill) for resume_skill in resume_skills) for skill in job_skills)
+            resume_skills = set(resume['skills'])  # remove duplicates
+            score = sum(1 if skill in resume_skills else max(
+                self.semantic_similarity(skill, resume_skill) for resume_skill in resume_skills) for skill in
+                        job_skills)
             avg_score = score / len(job_skills)
             resumes[i][job_skills_measure] = avg_score
         return resumes
@@ -114,13 +117,10 @@ class Matcher:
 
         for i, resume in enumerate(resumes):
             resumes[i][matching_score] = (
-                0.2 * resume[degree] +
-                0.3 * resume[skills] +
-                0.3 * resume[experiences] +
-                0.2 * resume[job_title]
+                    0.2 * resume[degree] +
+                    0.3 * resume[skills] +
+                    0.3 * resume[experiences] +
+                    0.2 * resume[job_title]
             ).round(3)
 
         return resumes
-
-
-
