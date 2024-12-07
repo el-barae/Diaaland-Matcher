@@ -3,6 +3,8 @@ pandas
 numpy
 sqlalchemy
 langdetect
-spacy
 scikit-learn
 pydantic
+PyMuPDF
+fastapi
+router

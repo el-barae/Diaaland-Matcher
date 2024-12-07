@@ -8,7 +8,8 @@ from resources import DEGREE_IMPORTANCE
 import json
 """
 from fastapi import FastAPI
-from routes import router
+from src.routes.extractCV import router as extract_router
+from src.routes.Matcher import router as matcher_router
 
 """
 def get_db():
@@ -65,16 +66,12 @@ async def matching(job_id):
 app = FastAPI()
 
 # Include your routes
-app.include_router(router)
+app.include_router(extract_router)
+app.include_router(matcher_router)
 
 # Run the app
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='127.0.0.1', port=8000)
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 

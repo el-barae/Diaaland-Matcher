@@ -3,7 +3,9 @@ from typing import List, Dict, Any, Optional
 import logging
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-from fastapi import HTTPException
+from fastapi import APIRouter, HTTPException
+
+router = APIRouter()
 
 class CandidateDetails(BaseModel):
     candidateId: int
@@ -125,7 +127,7 @@ async def match_resumes(job_request: JobRequest):
         job_description = job_request.jobDescription
         job_degrees = job_request.degrees
         job_id = job_request.jobId
-        result = matcher.matching_score_by_job(candidates_data, job_description, job_degrees, job_id)
+        result = Matcher.matching_score_by_job(candidates_data, job_description, job_degrees, job_id)
         return result
     except Exception as e:
         logging.error(f"Error matching resumes: {e}")
@@ -138,7 +140,7 @@ async def match_jobs(candidate_request: CandidateRequest):
         candidate_degrees = candidate_request.educations
         candidate_id = candidate_request.candidateId
         jobs_data = candidate_request.jobsDetails
-        result = matcher.matching_score_by_candidates(jobs_data, candidate_skills, candidate_degrees, candidate_id)
+        result = Matcher.matching_score_by_candidates(jobs_data, candidate_skills, candidate_degrees, candidate_id)
         return result
     except Exception as e:
         logging.error(f"Error matching jobs: {e}")
