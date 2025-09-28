@@ -1,9 +1,10 @@
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
 import fitz  # PyMuPDF
 import re
+import io
 
 router = APIRouter()
 
@@ -62,32 +63,41 @@ def extract_text(file_path):
             text += page.get_text()
     return text
 
-def extract_skills(text):
-    extracted_skills = [skill for skill in skills if skill.lower() in text.lower()]
-    return extracted_skills
+def extract_skills(text: str):
+    extracted = []
+    lower_text = text.lower()
+    for skill in skills:
+        # match sans espace / casse
+        if skill.lower().replace(" ", "") in lower_text.replace(" ", ""):
+            extracted.append(skill)
+    return list(set(extracted))  # éviter doublons
 
-def extract_educations(text):
-    extracted_educations = []
+def extract_educations(text: str):
+    extracted = []
     for pattern in degree_patterns:
         matches = re.findall(pattern, text, re.IGNORECASE)
-        extracted_educations.extend(matches)
-    return extracted_educations
+        extracted.extend(matches)
+    return list(set(extracted))
 
-@router.post('/extract')
-async def extract(request: ExtractRequest):
-    if not request.file_path:
-        raise HTTPException(status_code=400, detail="Invalid request body")
 
-    file_path = request.file_path
+@router.post("/extract")
+async def extract(file: UploadFile = File(...)):
     try:
-        text = extract_text(file_path)
+        contents = await file.read()
+
+        # ouvrir directement depuis mémoire
+        with fitz.open(stream=contents, filetype="pdf") as doc:
+            text = ""
+            for page in doc:
+                text += page.get_text("text")  # "text" = layout simple
+
+        extracted_skills = extract_skills(text)
+        extracted_educations = extract_educations(text)
+
+        return {
+            "skills": extracted_skills,
+            "educations": extracted_educations
+        }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to read the file: {e}")
-
-    extracted_skills = extract_skills(text)
-    extracted_educations = extract_educations(text)
-
-    return {
-        'skills': extracted_skills,
-        'educations': extracted_educations
-    }
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {e}")
