@@ -8,3 +8,5 @@ pydantic
 PyMuPDF
 fastapi
 router
+python-multipart
+uvicorn

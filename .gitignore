@@ -3,3 +3,4 @@ src/feature_extraction/test.py
 data_to_annotate
 data
 test.py
+venv
