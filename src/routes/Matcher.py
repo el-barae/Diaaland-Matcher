@@ -34,101 +34,111 @@ class Matcher:
             job_embeddings = self.model.encode(job_feature, convert_to_tensor=True)
             resume_embeddings = self.model.encode(resume_feature, convert_to_tensor=True)
             cosine_scores = util.pytorch_cos_sim(job_embeddings, resume_embeddings)
-            similarity_score = np.mean(cosine_scores.cpu().numpy())
-            return similarity_score
+            return float(np.mean(cosine_scores.cpu().numpy()))
         except Exception as e:
             logging.error(f"Error calculating semantic similarity: {e}")
             return 0.0
 
-    def degree_matching(self, candidates: List[Dict[str, Any]], job_degrees: List[str]) -> List[Dict[str, Any]]:
-        min_required_degree = min(job_degrees, key=lambda degree: self.degree_importance.get(degree, 0))
-        degree_measure = 'Degree job matching'
+    def matching_score_by_job(
+        self, candidate: Dict[str, Any], job_description: str, job_degrees: List[str], job_id: int
+    ) -> Dict[str, Any]:
+        skills = candidate.get("skills", [])
+        educations = [deg for deg in candidate.get("educations", []) if deg]
+        candidate_id = candidate.get("candidateId")
 
-        for i, candidate in enumerate(candidates):
-            candidate_degrees = candidate.get('educations', [])
-            if not candidate_degrees:
-                candidates[i][degree_measure] = 0
-                continue
+        # --- Similarité sémantique entre description et skills ---
+        skills_score = 0.0
+        for skill in skills:
+            skills_score += self.semantic_similarity(job_description, skill)
+        if skills:
+            skills_score /= len(skills)
 
-            candidate_degrees = [degree for degree in candidate_degrees if degree is not None]
-            if not candidate_degrees:
-                candidates[i][degree_measure] = 0
-                continue
+        # --- Bonus mots-clés exacts ---
+        job_text = job_description.lower()
+        keyword_count = sum(1 for skill in skills if skill.lower() in job_text)
+        keyword_boost = 0.05 * keyword_count  # chaque skill trouvé ajoute 0.05
 
-            max_candidate_degree = max(candidate_degrees, key=lambda degree: self.degree_importance.get(degree, 0))
-            candidates[i][degree_measure] = int(self.degree_importance.get(max_candidate_degree, 0) >= self.degree_importance.get(min_required_degree, 0))
-        return candidates
+        # --- Matching diplômes ---
+        degree_score = 0.0
+        if job_degrees and educations:
+            min_required_degree = min(job_degrees, key=lambda d: self.degree_importance.get(d, 0))
+            max_candidate_degree = max(educations, key=lambda d: self.degree_importance.get(d, 0))
+            hierarchy_match = int(
+                self.degree_importance.get(max_candidate_degree, 0) >= self.degree_importance.get(min_required_degree, 0)
+            )
+            # Bonus sémantique diplômes
+            semantic_degree = max((self.semantic_similarity(job_description, deg) for deg in educations), default=0.0)
+            degree_score = 0.5 * hierarchy_match + 0.5 * semantic_degree
 
-    def skills_matching(self, candidates: List[Dict[str, Any]], job_skills: List[str]) -> List[Dict[str, Any]]:
-        job_skills_measure = 'Skills job matching'
+        # --- Score final ---
+        final_score = 0.7 * skills_score + 0.3 * degree_score + keyword_boost
+        final_score = round(min(final_score, 1.0), 2)  # clamp à 1.0 max
 
-        for i, candidate in enumerate(candidates):
-            candidate_skills = candidate.get('skills', [])
-            if not candidate_skills:
-                candidates[i][job_skills_measure] = 0.0
-                continue
-
-            score = 0
-            for job_skill in job_skills:
-                if job_skill in candidate_skills:
-                    score += 1
-                else:
-                    similarity_scores = [self.semantic_similarity(job_skill, candidate_skill) for candidate_skill in candidate_skills]
-                    max_similarity = max(similarity_scores, default=0.0)
-                    score += max_similarity
-
-            avg_score = score / len(job_skills) if job_skills else 0
-            candidates[i][job_skills_measure] = avg_score
-        return candidates
-
-    def matching_score_by_job(self, candidates: List[Dict[str, Any]], job_description: str, job_degrees: List[str], job_id: int) -> List[Dict[str, Any]]:
-        candidates = self.degree_matching(candidates, job_degrees)
-        job_skills = job_description.split()  # Extract skills from job description for simplicity
-        candidates = self.skills_matching(candidates, job_skills)
-        matching_score_key = "Matching score job"
-
-        for i, candidate in enumerate(candidates):
-            degree_score = candidate.get('Degree job matching', 0)
-            skills_score = candidate.get('Skills job matching', 0)
-            candidates[i][matching_score_key] = round(0.2 * degree_score + 0.8 * skills_score, 2)
-
-        # Return only required fields
-        return [{
-            "idCandidate": candidate.get("candidateId", ""),
+        return {
             "idJob": job_id,
-            "matchingScore": candidate[matching_score_key]
-        } for candidate in candidates]
+            "idCandidate": candidate_id,
+            "matchingScore": final_score,
+            "skillsScore": round(skills_score, 2),
+            "degreeScore": round(degree_score, 2),
+            "keywordBoost": round(keyword_boost, 2)
+        }
 
-    def matching_score_by_candidates(self, jobs: List[Dict[str, Any]], candidate_skills: List[str], candidate_degrees: List[str], candidate_id: int) -> List[Dict[str, Any]]:
-        candidate_data = [{'skills': candidate_skills, 'educations': candidate_degrees, 'candidateId': candidate_id}]
-        matching_jobs = []
-
+    def matching_score_by_candidate(
+        self, jobs: List[Dict[str, Any]], candidate_skills: List[str], candidate_degrees: List[str], candidate_id: int
+    ) -> List[Dict[str, Any]]:
+        candidate_data = {
+            "skills": candidate_skills,
+            "educations": candidate_degrees,
+            "candidateId": candidate_id
+        }
+        results = []
         for job in jobs:
-            job_description = job['description']
-            job_degrees = job['degrees']
-            job_id = job.get("id", 0)
-            matched_candidate = self.matching_score_by_job(candidate_data, job_description, job_degrees, job_id)[0]
-            matching_jobs.append({
-                "idJob": job_id,
-                "idCandidate": matched_candidate["idCandidate"],
-                "matchingScore": matched_candidate["matchingScore"]
-            })
+            job_id = job.get("id") or job.get("jobId", 0)
+            job_desc = job.get("description") or job.get("jobDescription", "")
+            job_degrees = job.get("degrees", [])
+            match = self.matching_score_by_job(candidate_data, job_desc, job_degrees, job_id)
+            results.append(match)
+        return results
 
-        return matching_jobs
 
+degree_importance = {
+    "Primary School": 1,
+    "Secondary School": 2,
+    "High School": 3,
+    "Baccalaureate": 4,
+    "Bachelor": 5,
+    "Licence": 5,
+    "Master": 6,
+    "Engineer": 6,
+    "PhD": 7,
+    "Doctorat": 7,
+    "Postdoctoral": 8
+}
+
+# Charger le modèle une seule fois
+model = SentenceTransformer("all-MiniLM-L6-v2")
+matcher = Matcher(model, degree_importance)
 
 @router.post("/match_resumes/")
 async def match_resumes(job_request: JobRequest):
     try:
-        candidates_data = [
-            {"candidateId": candidate.candidateId, "skills": candidate.skills, "educations": candidate.educations}
-            for candidate in job_request.candidatesDetails
-        ]
-        job_description = job_request.jobDescription
-        job_degrees = job_request.degrees
-        job_id = job_request.jobId
-        result = Matcher.matching_score_by_job(candidates_data, job_description, job_degrees, job_id)
-        return result
+        results = []
+        for candidate in job_request.candidatesDetails:
+            candidate_data = {
+                "candidateId": candidate.candidateId,
+                "skills": candidate.skills,
+                "educations": candidate.educations
+            }
+            # Appel sur l'instance matcher, pour chaque candidat
+            match = matcher.matching_score_by_job(
+                candidate=candidate_data,
+                job_description=job_request.jobDescription,
+                job_degrees=job_request.degrees,
+                job_id=job_request.jobId
+            )
+            results.append(match)
+        return results
+
     except Exception as e:
         logging.error(f"Error matching resumes: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -136,12 +146,22 @@ async def match_resumes(job_request: JobRequest):
 @router.post("/match_jobs/")
 async def match_jobs(candidate_request: CandidateRequest):
     try:
-        candidate_skills = candidate_request.skills
-        candidate_degrees = candidate_request.educations
         candidate_id = candidate_request.candidateId
-        jobs_data = candidate_request.jobsDetails
-        result = Matcher.matching_score_by_candidates(jobs_data, candidate_skills, candidate_degrees, candidate_id)
-        return result
+        candidate_skills = candidate_request.skills or []
+        candidate_degrees = [deg for deg in candidate_request.educations if deg]
+        jobs = candidate_request.jobsDetails
+
+        # Utilisation de l'instance
+        results = matcher.matching_score_by_candidate(
+            jobs=jobs,
+            candidate_skills=candidate_skills,
+            candidate_degrees=candidate_degrees,
+            candidate_id=candidate_id
+        )
+
+        logging.info(f"Results for candidate {candidate_id}: {results}")
+        return results
+
     except Exception as e:
-        logging.error(f"Error matching jobs: {e}")
+        logging.error(f"Error in /match_jobs/: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
