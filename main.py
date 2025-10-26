@@ -8,6 +8,8 @@ from resources import DEGREE_IMPORTANCE
 import json
 """
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from eureka_client import register_with_eureka
 from src.routes.extractCV import router as extract_router
 from src.routes.Matcher import router as matcher_router
 
@@ -63,15 +65,32 @@ async def matching(job_id):
 
 """
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    register_with_eureka()
+    yield
+    # Ici, tu peux ajouter la désinscription si tu veux plus tard
+
+app = FastAPI(lifespan=lifespan)
+
+@app.get("/")
+def hello():
+    return {"message": "Hello from FastAPI with Eureka!"}
+
 
 # Include your routes
 app.include_router(extract_router)
 app.include_router(matcher_router)
 
-# Run the app
-if __name__ == '__main__':
+if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+# # Run the app
+# if __name__ == '__main__':
+#     import uvicorn
+#     uvicorn.run(app, host='127.0.0.1', port=8000)
 
 
